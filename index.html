@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deadlock Detection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Deadlock Detection System</h1>
+    <div id="transactionInput">
+        <label for="transactionID">Transaction ID:</label>
+        <input type="number" id="transactionID" name="transactionID">
+        <label for="waitingFor">Waiting For Transaction ID:</label>
+        <input type="number" id="waitingFor" name="waitingFor">
+        <button onclick="addTransaction()">Add Transaction</button>
+    </div>
+    <button id="detectBtn" onclick="detectDeadlocks()">Detect Deadlocks</button>
+    <div id="alertBox"></div>
+    <script src="deadlocks.js"></script>
+</body>
+</html>
