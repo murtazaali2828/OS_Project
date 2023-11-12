@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Thread Deadlock Detection Visualization</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1c1c1c;
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+        #visualization {
+            width: 100%;
+            height: 400px;
+            border: 1px solid lightgray;
+            margin-top: 15px;
+        }
+        button {
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0b5ed7;
+        }
+        #status {
+            color: #FFC107;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Thread Deadlock Detection Visualization</h1>
+    <div id="visualization"></div>
+    <button onclick="simulateThreadActions()">Simulate Thread Actions</button>
+    <div id="status"></div>
+    
+    <script>
+        // Initialization for vis.js
+        const nodes = new vis.DataSet();
+        const edges = new vis.DataSet();
+        const container = document.getElementById('visualization');
+        const data = { nodes, edges };
+        const options = {
+            nodes: {
+                shape: 'box',
+                color: {
+                    border: '#2B7CE9',
+                    background: '#97C2FC',
+                    highlight: {
+                        border: '#2B7CE9',
+                        background: '#D2E5FF'
+                    }
+                },
+            },
+            edges: {
+                arrows: 'to'
+            },
+            physics: {
+                enabled: false // Disable physics for a stable network
+            },
+            interaction: {
+                zoomView: false, // Disables zooming
+                dragView: false  // Disables dragging/panning
+            }
+        };
+        const network = new vis.Network(container, data, options);
+
+        // Thread and resource simulation setup
+        const maxThreads = 4;
+        const maxResources = 3;
+        const threads = {};
+        const resources = {};
+        const deadlockChains = []; // Store detected deadlocks
+
+        // Initialize threads and resources
+        for (let i = 0; i < maxThreads; i++) {
+            const threadId = `Thread${i}`;
+            threads[threadId] = { holding: [], waiting: null };
+            nodes.add({ id: threadId, label: threadId, color: '#7BE141' });
+        }
+        for (let i = 0; i < maxResources; i++) {
+            const resourceId = `Resource${i}`;
+            resources[resourceId] = null;
+            nodes.add({ id: resourceId, label: resourceId, color: '#FFC107' });
+        }
+
+        // Update the vis.js graph to show initial state
+        network.fit({
+            animation: {
+                duration: 1000,
+                easingFunction: 'easeInOutQuad'
+            }
+        });
+
+        // Function to display status messages
+        function displayStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.style.color = isError ? '#FF5733' : '#FFC107'; // Red for errors, yellow for status
+        }
+
+        // Function to create a deadlock scenario
+        function createDeadlockScenario() {
+            // Clear previous data
+            nodes.clear();
+            edges.clear();
+            threads['Thread0'].holding = [];
+            threads['Thread1'].holding = [];
+            threads['Thread2'].holding = [];
+            threads['Thread3'].holding = [];
+            threads['Thread0'].waiting = 'Resource1';
+            threads['Thread1'].holding.push('Resource1');
+            threads['Thread1'].waiting = 'Resource2';
+            threads['Thread2'].holding.push('Resource2');
+            threads['Thread2'].waiting = 'Resource3';
+            threads['Thread3'].holding.push('Resource3');
+            threads['Thread3'].waiting = 'Resource1';
+
+            resources['Resource1'] = 'Thread1';
+            resources['Resource2'] = 'Thread2';
+            resources['Resource3'] = 'Thread3';
+            
+            // Re-add the nodes to the graph
+            for (let i = 0; i < maxThreads; i++) {
+                const threadId = `Thread${i}`;
+                nodes.add({ id: threadId, label: threadId, color: '#7BE141' });
+            }
+            for (let i = 0; i < maxResources; i++) {
+                const resourceId = `Resource${i}`;
+                nodes.add({ id: resourceId, label: resourceId, color: '#FFC107' });
+            }
+
+            // Add the edges to the graph
+            for (const threadId in threads) {
+                const thread = threads[threadId];
+                if (thread.waiting) {
+                    edges.add({ from: threadId, to: thread.waiting });
+                }
+                thread.holding.forEach(resourceId => {
+                    edges.add({ from: resourceId, to: threadId });
+                });
+            }
+            updateGraph();
+        }
+
+        // Function to update the graph with the current state
+        function updateGraph() {
+            network.setData({ nodes: nodes, edges: edges });
+        }
+
+        // Simulate threads randomly locking and unlocking resources
+        function simulateThreadActions() {
+            createDeadlockScenario(); // Use this function to create a deadlock scenario
+            detectDeadlocks();
+        }
+
+        // Detect deadlocks in the current state
+        function detectDeadlocks() {
+            deadlockChains.length = 0; // Clear previous deadlock chains
+            const visited = {};
+            const stack = [];
+
+            function visit(threadId, chain = []) {
+                if (visited[threadId]) {
+                    if (stack.includes(threadId)) {
+                        deadlockChains.push([...chain, threadId]);
+                        return;
+                    }
+                    return;
+                }
+                visited[threadId] = true;
+                stack.push(threadId);
+
+                const waitingResource = threads[threadId].waiting;
+                if (waitingResource) {
+                    const ownerThread = resources[waitingResource];
+                    if (ownerThread && ownerThread !== threadId) {
+                        visit(ownerThread, [...chain, threadId]);
+                    }
+                }
+
+                stack.pop();
+            }
+
+            Object.keys(threads).forEach(threadId => {
+                if (!visited[threadId]) {
+                    visit(threadId);
+                }
+            });
+
+            if (deadlockChains.length > 0) {
+                displayStatus('Deadlock detected!', true);
+                resolveDeadlocks();
+            } else {
+                displayStatus('No deadlocks detected.');
+            }
+        }
+
+        // Resolve deadlocks
+        function resolveDeadlocks() {
+            deadlockChains.forEach(chain => {
+                const threadToRollback = chain[0]; // Rollback the first thread in the deadlock chain
+                threads[threadToRollback].holding.forEach(resourceId => {
+                    resources[resourceId] = null;
+                    nodes.update({ id: resourceId, color: '#FFC107' }); // Reset resource color
+                });
+                threads[threadToRollback] = { holding: [], waiting: null };
+                nodes.update({ id: threadToRollback, color: '#7BE141' }); // Reset thread color
+            });
+            updateGraph();
+            deadlockChains.length = 0; // Clear deadlock chains after resolution
+            displayStatus('Deadlock resolved.', false);
+        }
+
+        // Call simulateThreadActions to start the simulation
+        simulateThreadActions();
+
+    </script>    
+</body>
+</html>
