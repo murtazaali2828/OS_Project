@@ -18,6 +18,15 @@
             padding: 20px;
             margin: 0;
         }
+        .cc {
+            display: flex;
+          }
+          
+          .item {
+            flex: 1; /* This will ensure that all children (items) of the container will take up equal space */
+            padding: 16px; /* Adjust the padding as needed */
+            box-sizing: border-box; /* This makes sure that padding is included in the total width/height */
+          }
         .heading h1 {
             font-family: 'Sansita Swashed', cursive;
             text-align: center;
@@ -60,9 +69,9 @@
             </div>
         </div>
         <!-- Banking Section -->
-        <div class="row">
+        <div class="row cc" >
             <div class="col-lg-4">
-                <div class="serviceBox">
+                <div class="serviceBox item">
                     <span class="service-icon">1</span>
                     <h3 class="title">Banking</h3>
                     <p class="description">
@@ -73,7 +82,7 @@
             </div>
             <!-- Shipment Section -->
             <div class="col-lg-4">
-                <div class="serviceBox">
+                <div class="serviceBox item">
                     <span class="service-icon">2</span>
                     <h3 class="title">Shipment</h3>
                     <p class="description">
@@ -82,12 +91,22 @@
                     <a href="Shipment.html" class="read">Visualization</a>
                 </div>
             </div>
+            <div class="col-lg-4">
+                <div class="serviceBox item">
+                    <span class="service-icon">3</span>
+                    <h3 class="title">Thread</h3>
+                    <p class="description">
+                        The simulation displays a network of threads and resources, where threads can hold or wait for resources. Users can simulate thread actions, leading to the creation of deadlock scenarios, where multiple threads are waiting for resources in a circular dependency. The script can detect and resolve these deadlocks by rolling back the actions of specific threads.
+                    </p>
+                    <a href="thread.html" class="read">Visualization</a>
+                </div>
+            </div>
         </div>
         <!-- About Team Section -->
         <div class="row">
             <div class="col-lg-12">
                 <div class="serviceBox">
-                    <span class="service-icon">9</span>
+                    <span class="service-icon"></span>
                     <h3 class="title">About Team</h3>
                     <!-- Team Members -->
                     <span class="info">Syed Murtaza &emsp;&emsp;&emsp; 210905416</span>
