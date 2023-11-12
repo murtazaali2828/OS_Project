@@ -3,79 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="homepage.css">
+    <title>Deadlock and Concurrency Algorithms</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sansita+Swashed:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sansita+Swashed:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
-    <title>Deadlock and Concurrancy Algorithms</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1c1c1c;
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+        .heading h1 {
+            font-family: 'Sansita Swashed', cursive;
+            text-align: center;
+        }
+        .serviceBox {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: #333;
+            margin-bottom: 20px;
+        }
+        .service-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #0d6efd;
+        }
+        .description {
+            color: #ccc;
+        }
+        .read {
+            color: #0d6efd;
+            text-decoration: none;
+        }
+        .read:hover {
+            color: #0b5ed7;
+        }
+        .info {
+            color: #ccc;
+            display: block;
+        }
+    </style>
 </head>
 <body>
-    <div class="container"></div>
+    <div class="container">
         <div class="heading row">
-            <div class="center col-md-6 col-sm-6">
+            <div class="col-lg-12">
                 <h1>Deadlock And Resource Allocation Visualization</h1>
             </div>
         </div>
+        <!-- Banking Section -->
         <div class="row">
-            <div>
+            <div class="col-lg-4">
                 <div class="serviceBox">
                     <span class="service-icon">1</span>
                     <h3 class="title">Banking</h3>
                     <p class="description">
-                        Mutex is a mutual exclusion object that synchronizes access to a resource.
-                        It is created with a unique name at the start of a program.
-                        The Mutex is a locking mechanism that makes sure only one thread can acquire the Mutex at a time and enter the critical section.
+                        The banking visualization tool illustrates complex financial transactions within a banking network. It demonstrates how mutexes—mutual exclusion locks—manage the synchronization of concurrent transaction processes, ensuring safe and exclusive access to account data. Deadlocks can arise when multiple transactions are interdependent, potentially freezing the system. The tool provides an interactive way to visualize and understand deadlock detection algorithms and the necessary precautions to avoid them in a financial context.
                     </p>
                     <a href="Bank.html" class="read align-bottom">Visualization</a>
-        
                 </div>
             </div>
-        </div>
-        <div class ="row">
-            <div>
+            <!-- Shipment Section -->
+            <div class="col-lg-4">
                 <div class="serviceBox">
                     <span class="service-icon">2</span>
                     <h3 class="title">Shipment</h3>
                     <p class="description">
-                        Conceptually, a semaphore is a nonnegative integer count.
-                        Semaphores are typically used to coordinate access to resources, with the semaphore count initialized to the number of free resources.
-                        By default, there is no defined order of unblocking if multiple threads are waiting for a semaphore
+                        In contrast, the shipment visualization focuses on the logistics of resource allocation within a shipping network. Here, the resources are the transport vehicles themselves, and the deadlock scenarios can occur due to scheduling conflicts or overallocation of cargo space. This interactive tool offers insights into the challenges of shipping management, including load balancing, shipment prioritization, and effective deadlock resolution techniques that ensure timely delivery of goods.
                     </p>
                     <a href="Shipment.html" class="read">Visualization</a>
                 </div>
             </div>
         </div>
-        <div class ="row">
-
-            <div>
+        <!-- About Team Section -->
+        <div class="row">
+            <div class="col-lg-12">
                 <div class="serviceBox">
                     <span class="service-icon">9</span>
-                    <h3 class="title">About Team </h3>
-                    <span class="info"><img src="" alt="" style="">  &emsp;Syed Murtaza &emsp;&emsp;&nbsp; 210905416   </span>
-                    <br>
-                    <br> 
-                    <br>
-                    <span class="info"><img src="" alt="" style="">  &emsp;Viraj Desai &emsp; 210905019   </span>
-                    <br>
-                    <br> 
-                    <br>
-                    <span class="info"><img src="" alt="" style="">  &emsp;Kshitij Karn &emsp;&emsp;&nbsp; 21095121   </span>
-                    <br>
-                    <br> 
-                    <br>
-                    <span class="info"><img src="" alt="" style=""> &emsp;Priyanshu Ranjan &ensp;&emsp;&nbsp; 21095100   </span>
+                    <h3 class="title">About Team</h3>
+                    <!-- Team Members -->
+                    <span class="info">Syed Murtaza &emsp;&emsp;&emsp; 210905416</span>
+                    <span class="info">Viraj Desai &emsp;&emsp;&emsp;&emsp; 210905019</span>
+                    <span class="info">Kshitij Karn &emsp;&emsp;&emsp;&emsp; 21095121</span>
+                    <span class="info">Priyanshu Ranjan &emsp; 21095100</span>
                 </div>
             </div>
-
-            
         </div>
     </div>
-
-
-    
 </body>
 </html>
