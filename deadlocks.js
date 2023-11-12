@@ -1,70 +1,80 @@
 const transactions = [];
-const MAX_TRANSACTIONS = 100;
+        const MAX_TRANSACTIONS = 100;
 
-function addTransaction() {
-    const transactionID = parseInt(document.getElementById('transactionID').value);
-    const waitingFor = parseInt(document.getElementById('waitingFor').value);
+        function addTransaction() {
+    const transactionID = parseInt(document.getElementById('transactionID').value, 10);
+    const waitingFor = parseInt(document.getElementById('waitingFor').value, 10);
 
-    if (transactions.length < MAX_TRANSACTIONS) {
-        transactions.push({
-            id: transactionID,
-            waiting_for: waitingFor
-        });
-        alert(`Transaction ${transactionID} added, waiting for transaction ${waitingFor}.`);
-    } else {
-        alert('Maximum number of transactions reached.');
+    if (isNaN(transactionID) || isNaN(waitingFor)) {
+        showAlert('Please fill out both Transaction ID and Waiting For Transaction ID fields.');
+        return;
     }
+
+    if (transactionID >= MAX_TRANSACTIONS || waitingFor >= MAX_TRANSACTIONS) {
+        showAlert('Transaction ID and Waiting For Transaction ID must be less than ' + MAX_TRANSACTIONS + '.');
+        return;
+    }
+
+    if (transactionID === waitingFor) {
+        showAlert('A transaction cannot wait for itself.');
+        return;
+    }
+
+    if (transactions.some(t => t.id === transactionID)) {
+        showAlert(`Transaction ${transactionID} already exists. Please use a unique ID.`);
+        return;
+    }
+
+    transactions.push({ id: transactionID, waiting_for: waitingFor });
+    showAlert(`Transaction ${transactionID} added, waiting for transaction ${waitingFor}.`);
 }
 
 function detectDeadlocks() {
     let deadlockDetected = false;
-    let visited = new Array(MAX_TRANSACTIONS).fill(0);
+    let visited = new Array(MAX_TRANSACTIONS).fill(false);
 
-    transactions.forEach((t, i) => {
-        if (t.waiting_for !== -1 && !visited[i]) {
-            let current = i;
-            let cycle_detected = false;
-
-            while (!visited[current]) {
-                visited[current] = 1;
-                current = transactions.findIndex(t => t.id === transactions[current].waiting_for);
-                if (current === i) {
-                    cycle_detected = true;
-                    deadlockDetected = true;
-                    break;
-                }
-                if (current === -1) break;
+    transactions.forEach((transaction, index) => {
+        if (visited[index]) {
+            return;
+        }
+        let stack = [];
+        let current = index;
+        while (true) {
+            visited[current] = true;
+            stack.push(current);
+            let next = transactions.findIndex(t => t.id === transactions[current].waiting_for);
+            if (next === -1) {
+                showAlert(`Transaction ${transactions[current].waiting_for} does not exist.`);
+                return;
             }
-
-            if (cycle_detected) {
-                alert(`Deadlock detected involving transaction ${i}.`);
-                resolveDeadlock(i, current);
+            if (stack.includes(next)) {
+                deadlockDetected = true;
+                resolveDeadlock(next);
+                return;
             }
+            if (visited[next]) {
+                break;
+            }
+            current = next;
         }
     });
 
     if (!deadlockDetected) {
-        alert('No deadlocks detected.');
+        showAlert('No deadlocks detected.');
     }
 }
 
-function resolveDeadlock(i, current) {
-    const alertBox = document.getElementById('alertBox');
-    alertBox.style.display = 'block';
-    if (i < current) {
-        transactions[i].waiting_for = -1;
-        alertBox.innerHTML = `Deadlock resolved: Terminated transaction ${i}.`;
-    } else {
-        transactions[current].waiting_for = -1;
-        alertBox.innerHTML = `Deadlock resolved: Terminated transaction ${current}.`;
-    }
-}
+        function resolveDeadlock(index) {
+            const deadlockedTransaction = transactions[index];
+            transactions.splice(index, 1);
+            showAlert(`Deadlock resolved: Terminated transaction ${deadlockedTransaction.id}.`);
+        }
 
-function alert(message) {
-    const alertBox = document.getElementById('alertBox');
-    alertBox.style.display = 'block';
-    alertBox.innerHTML = message;
-    setTimeout(() => {
-        alertBox.style.display = 'none';
-    }, 5000);
-}
+        function showAlert(message) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.style.display = 'block';
+            alertBox.textContent = message;
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
+        }
