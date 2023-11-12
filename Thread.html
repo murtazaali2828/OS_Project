@@ -39,7 +39,9 @@
 <body>
     <h1>Thread Deadlock Detection Visualization</h1>
     <div id="visualization"></div>
-    <button onclick="simulateThreadActions()">Simulate Thread Actions</button>
+    <button onclick="generateRandomScenario()">Generate Random Scenario</button>
+    <button onclick="detectDeadlocks()">Detect Deadlock</button>
+    <button onclick="resolveDeadlocks()">Resolve Deadlock</button>
     <div id="status"></div>
     
     <script>
@@ -76,29 +78,27 @@
         // Thread and resource simulation setup
         const maxThreads = 4;
         const maxResources = 3;
-        const threads = {};
-        const resources = {};
-        const deadlockChains = []; // Store detected deadlocks
+        let threads = {};
+        let resources = {};
+        let deadlockChains = []; // Store detected deadlocks
 
-        // Initialize threads and resources
-        for (let i = 0; i < maxThreads; i++) {
-            const threadId = `Thread${i}`;
-            threads[threadId] = { holding: [], waiting: null };
-            nodes.add({ id: threadId, label: threadId, color: '#7BE141' });
-        }
-        for (let i = 0; i < maxResources; i++) {
-            const resourceId = `Resource${i}`;
-            resources[resourceId] = null;
-            nodes.add({ id: resourceId, label: resourceId, color: '#FFC107' });
-        }
-
-        // Update the vis.js graph to show initial state
-        network.fit({
-            animation: {
-                duration: 1000,
-                easingFunction: 'easeInOutQuad'
+        function initializeThreadsAndResources() {
+            threads = {}; // Reset threads
+            resources = {}; // Reset resources
+            nodes.clear();
+            edges.clear();
+            for (let i = 0; i < maxThreads; i++) {
+                const threadId = `Thread${i}`;
+                threads[threadId] = { holding: [], waiting: null };
+                nodes.add({ id: threadId, label: threadId, color: '#7BE141' });
             }
-        });
+            for (let i = 0; i < maxResources; i++) {
+                const resourceId = `Resource${i}`;
+                resources[resourceId] = null;
+                nodes.add({ id: resourceId, label: resourceId, color: '#FFC107' });
+            }
+            network.setData({ nodes, edges });
+        }
 
         // Function to display status messages
         function displayStatus(message, isError = false) {
@@ -107,66 +107,52 @@
             statusDiv.style.color = isError ? '#FF5733' : '#FFC107'; // Red for errors, yellow for status
         }
 
-        // Function to create a deadlock scenario
-        function createDeadlockScenario() {
-            // Clear previous data
-            nodes.clear();
-            edges.clear();
-            threads['Thread0'].holding = [];
-            threads['Thread1'].holding = [];
-            threads['Thread2'].holding = [];
-            threads['Thread3'].holding = [];
-            threads['Thread0'].waiting = 'Resource1';
-            threads['Thread1'].holding.push('Resource1');
-            threads['Thread1'].waiting = 'Resource2';
-            threads['Thread2'].holding.push('Resource2');
-            threads['Thread2'].waiting = 'Resource3';
-            threads['Thread3'].holding.push('Resource3');
-            threads['Thread3'].waiting = 'Resource1';
+        // Function to create a random deadlock scenario
+        function generateRandomScenario() {
+    // Clear existing data
+    nodes.clear();
+    edges.clear();
+    threads = {};
+    resources = {};
 
-            resources['Resource1'] = 'Thread1';
-            resources['Resource2'] = 'Thread2';
-            resources['Resource3'] = 'Thread3';
-            
-            // Re-add the nodes to the graph
-            for (let i = 0; i < maxThreads; i++) {
-                const threadId = `Thread${i}`;
-                nodes.add({ id: threadId, label: threadId, color: '#7BE141' });
-            }
-            for (let i = 0; i < maxResources; i++) {
-                const resourceId = `Resource${i}`;
-                nodes.add({ id: resourceId, label: resourceId, color: '#FFC107' });
-            }
+    // Reinitialize threads and resources
+    for (let i = 0; i < maxThreads; i++) {
+        const threadId = `Thread${i}`;
+        threads[threadId] = { holding: [], waiting: null };
+        nodes.add({ id: threadId, label: threadId, color: '#7BE141' });
+    }
+    for (let i = 0; i < maxResources; i++) {
+        const resourceId = `Resource${i}`;
+        resources[resourceId] = null;
+        nodes.add({ id: resourceId, label: resourceId, color: '#FFC107' });
+    }
 
-            // Add the edges to the graph
-            for (const threadId in threads) {
-                const thread = threads[threadId];
-                if (thread.waiting) {
-                    edges.add({ from: threadId, to: thread.waiting });
-                }
-                thread.holding.forEach(resourceId => {
-                    edges.add({ from: resourceId, to: threadId });
-                });
-            }
-            updateGraph();
+    // Create a new random scenario
+    for (let i = 0; i < maxThreads; i++) {
+        const threadId = `Thread${i}`;
+        let randomResourceIndex = Math.floor(Math.random() * maxResources);
+        let resourceId = `Resource${randomResourceIndex}`;
+
+        // Randomly decide if the thread will be waiting for or holding a resource
+        if (Math.random() > 0.5) {
+            threads[threadId].waiting = resourceId;
+            edges.add({ from: threadId, to: resourceId });
+        } else {
+            threads[threadId].holding.push(resourceId);
+            resources[resourceId] = threadId;
+            edges.add({ from: resourceId, to: threadId });
         }
+    }
 
-        // Function to update the graph with the current state
-        function updateGraph() {
-            network.setData({ nodes: nodes, edges: edges });
-        }
-
-        // Simulate threads randomly locking and unlocking resources
-        function simulateThreadActions() {
-            createDeadlockScenario(); // Use this function to create a deadlock scenario
-            detectDeadlocks();
-        }
+    network.setData({ nodes, edges });
+    displayStatus('Random scenario generated. Ready for deadlock detection.');
+}
 
         // Detect deadlocks in the current state
         function detectDeadlocks() {
             deadlockChains.length = 0; // Clear previous deadlock chains
-            const visited = {};
-            const stack = [];
+            let visited = {};
+            let stack = [];
 
             function visit(threadId, chain = []) {
                 if (visited[threadId]) {
@@ -198,7 +184,6 @@
 
             if (deadlockChains.length > 0) {
                 displayStatus('Deadlock detected!', true);
-                resolveDeadlocks();
             } else {
                 displayStatus('No deadlocks detected.');
             }
@@ -206,23 +191,29 @@
 
         // Resolve deadlocks
         function resolveDeadlocks() {
+            if (deadlockChains.length === 0) {
+                displayStatus('No deadlock to resolve.', false);
+                return;
+            }
+
             deadlockChains.forEach(chain => {
                 const threadToRollback = chain[0]; // Rollback the first thread in the deadlock chain
                 threads[threadToRollback].holding.forEach(resourceId => {
                     resources[resourceId] = null;
                     nodes.update({ id: resourceId, color: '#FFC107' }); // Reset resource color
                 });
-                threads[threadToRollback] = { holding: [], waiting: null };
+                threads[threadToRollback].holding.length = 0; // Clear the holding array
+                threads[threadToRollback].waiting = null; // Reset the waiting property
                 nodes.update({ id: threadToRollback, color: '#7BE141' }); // Reset thread color
             });
-            updateGraph();
+            
             deadlockChains.length = 0; // Clear deadlock chains after resolution
+            network.setData({ nodes, edges }); // Update the network graph
             displayStatus('Deadlock resolved.', false);
         }
 
-        // Call simulateThreadActions to start the simulation
-        simulateThreadActions();
-
+        // Initialize the graph with a random scenario
+        generateRandomScenario();
     </script>    
 </body>
 </html>
