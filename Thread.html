@@ -74,8 +74,6 @@
             }
         };
         const network = new vis.Network(container, data, options);
-
-        // Thread and resource simulation setup
         const maxThreads = 4;
         const maxResources = 3;
         let threads = {};
@@ -197,22 +195,21 @@
             }
 
             deadlockChains.forEach(chain => {
-                const threadToRollback = chain[0]; // Rollback the first thread in the deadlock chain
+                const threadToRollback = chain[0]; 
                 threads[threadToRollback].holding.forEach(resourceId => {
                     resources[resourceId] = null;
-                    nodes.update({ id: resourceId, color: '#FFC107' }); // Reset resource color
+                    nodes.update({ id: resourceId, color: '#FFC107' }); 
                 });
-                threads[threadToRollback].holding.length = 0; // Clear the holding array
-                threads[threadToRollback].waiting = null; // Reset the waiting property
-                nodes.update({ id: threadToRollback, color: '#7BE141' }); // Reset thread color
+                threads[threadToRollback].holding.length = 0; 
+                threads[threadToRollback].waiting = null; 
+                nodes.update({ id: threadToRollback, color: '#7BE141' }); 
             });
             
-            deadlockChains.length = 0; // Clear deadlock chains after resolution
-            network.setData({ nodes, edges }); // Update the network graph
+            deadlockChains.length = 0; 
+            network.setData({ nodes, edges }); 
             displayStatus('Deadlock resolved.', false);
         }
 
-        // Initialize the graph with a random scenario
         generateRandomScenario();
     </script>    
 </body>
