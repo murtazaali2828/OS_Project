@@ -105,92 +105,144 @@
 
         <label for="toSelection">To:</label>
         <select id="toSelection"></select>
-
         <button onclick="assignRelationship()">Assign Relationship</button>
         <button onclick="simulateDeadlock()">Simulate Deadlock</button>
+        <button onclick="detectDeadlock()">Detect Deadlock</button>
+        <button id="deadlockResolutionBtn" onclick="resolveDeadlock()" >Resolve Deadlock</button>
     </div>
 
     <div id="alertBox"></div>
-    <div id="waitingArea">
-        <h3>Waiting Queue</h3>
-        <ul id="waitingList"></ul>
-    </div>
-    <div id="shipArea">
-        <h3>Ship Availability</h3>
-        <ul id="shipList"></ul>
-    </div>
     <div id="mynetwork"></div>
-    <!-- The script will be provided in the next cell -->
-</body>
-</html>
-
     <script>
-    // Globals to maintain state
-    var products = [];
-    var ships = {};
-    var nodes = new vis.DataSet([]);
-    var edges = new vis.DataSet([]);
-    var container = document.getElementById('mynetwork');
-    var data = { nodes: nodes, edges: edges };
-    var options = {
-        autoResize: true,
-        height: '400px',
-        width: '100%',
-        layout: {
-            hierarchical: {
-                enabled: true,
-                levelSeparation: 150,
-                nodeSpacing: 100,
-                treeSpacing: 200,
-                blockShifting: true,
-                edgeMinimization: true,
-                parentCentralization: true,
-                direction: 'UD',        // UD, DU, LR, RL
-                sortMethod: 'directed'  // hubsize, directed
+        // Globals to maintain state
+        var products = [];
+        var ships = {};
+        var nodes = new vis.DataSet([]);
+        var edges = new vis.DataSet([]);
+        var container;
+        var network;
+        var data = { nodes: nodes, edges: edges };
+        var options = {
+            autoResize: true,
+            height: '400px',
+            width: '100%',
+            layout: {
+                hierarchical: {
+                    enabled: true,
+                    levelSeparation: 150,
+                    nodeSpacing: 100,
+                    treeSpacing: 200,
+                    blockShifting: true,
+                    edgeMinimization: true,
+                    parentCentralization: true,
+                    direction: 'UD',        // UD, DU, LR, RL
+                    sortMethod: 'directed'  // hubsize, directed
+                }
+            },
+            physics: {
+                hierarchicalRepulsion: {
+                    centralGravity: 0.0,
+                    springLength: 100,
+                    springConstant: 0.01,
+                    nodeDistance: 120,
+                    damping: 0.09
+                }
+            },
+            nodes: {
+                shape: 'dot',
+                size: 20
+            },
+            edges: {
+                smooth: true,
+                arrows: { to: true }
             }
-        },
-        physics: {
-            hierarchicalRepulsion: {
-                centralGravity: 0.0,
-                springLength: 100,
-                springConstant: 0.01,
-                nodeDistance: 120,
-                damping: 0.09
+        };
+        
+        // Function to add a product to the system
+        function addProductManually(productId) {
+            if (!productId || products.includes(productId)) {
+                showAlert('Product ID is invalid or already exists.');
+                return;
             }
-        },
-        nodes: {
-            shape: 'dot',
-            size: 20
-        },
-        edges: {
-            smooth: true,
-            arrows: { to: true }
+            products.push(productId);
+            nodes.add({ id: productId, label: `Product ${productId}`, group: 'product' });
+            updateNetwork();
+            updateDropdowns();
+            showAlert(`Product ${productId} added.`);
         }
-    };
-    var network = new vis.Network(container, data, options);
+        
+        // Function to add a ship to the system
+        function addShipManually(shipId) {
+            if (!shipId || ships[shipId]) {
+                showAlert('Ship ID is invalid or already exists.');
+                return;
+            }
+            ships[shipId] = { 'instances': 1, 'available': 1 };
+            nodes.add({ id: shipId, label: `Ship ${shipId}`, group: 'ship' });
+            updateNetwork();
+            updateDropdowns();
+            showAlert(`Ship ${shipId} added.`);
+        }
+        
+        // Function to update the network visualization
+        function updateNetwork() {
+            if (network) {
+                network.setData({ nodes: nodes, edges: edges });
+            }
+        }
+        
+        // Function to update the dropdowns with the current products and ships
+        // Function to update the dropdowns with the current products and ships
+    function updateDropdowns() {
+        var fromSelection = document.getElementById('fromSelection');
+        var toSelection = document.getElementById('toSelection');
 
-    // Function to add a product to the system
-    function addProductManually(productId) {
-        if (!productId || products.includes(productId)) {
-            showAlert('Product ID is invalid or already exists.');
-            return;
-        }
-        products.push(productId);
-        nodes.add({ id: productId, label: `Product ${productId}`, group: 'product', level: 2 });
-        updateDropdowns();
-        showAlert(`Product ${productId} added.`);
+        // Reset the dropdowns
+        fromSelection.innerHTML = '<option value="">Select From...</option>';
+        toSelection.innerHTML = '<option value="">Select To...</option>';
+
+        // Add ships to both 'from' and 'to' dropdowns
+        Object.keys(ships).forEach(shipId => {
+            var option = `<option value="${shipId}">${shipId}</option>`;
+            fromSelection.innerHTML += option;
+            toSelection.innerHTML += option;
+        });
+
+        // Add products to both 'from' and 'to' dropdowns
+        products.forEach(productId => {
+            var option = `<option value="${productId}">${productId}</option>`;
+            fromSelection.innerHTML += option;
+            toSelection.innerHTML += option;
+        });
     }
 
-    // Function to add a ship to the system
-    function addShipManually(shipId) {
-        if (!shipId || ships[shipId]) {
-            showAlert('Ship ID is invalid or already exists.');
-            return;
+        
+        // Function to show alert messages
+        function showAlert(message) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.style.display = 'block';
+            alertBox.textContent = message;
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
         }
-        ships[shipId] = { 'instances': 1, 'available': 1 };  // Assuming each ship has 1 instance for simplicity
-        nodes.add({ id: shipId, label: `Ship ${shipId}`, group: 'ship', level: 1 });
-        updateDropdowns();
-        showAlert(`Ship ${shipId} added.`);
+        
+        // Function to handle adding a product from the UI
+    function addProduct() {
+        var productId = document.getElementById('newProductId').value.trim();
+        if (productId) {
+            addProductManually(productId);
+            document.getElementById('newProductId').value = ''; // Clear the input
+        }
+    }
+
+    // Function to handle adding a ship from the UI
+    function addShip() {
+        var shipId = document.getElementById('newShipId').value.trim();
+        if (shipId) {
+            addShipManually(shipId);
+            document.getElementById('newShipId').value = ''; // Clear the input
+        }
     }
 
     // Function to assign a relationship between entities
@@ -203,29 +255,13 @@
             return;
         }
         edges.add({ from: fromId, to: toId });
+        updateNetwork();
         if (detectDeadlock()) {
             resolveDeadlock();
         }
         showAlert(`Relationship assigned from ${fromId} to ${toId}`);
     }
 
-    // Function to update the dropdowns with the current products and ships
-    function updateDropdowns() {
-        var fromSelection = document.getElementById('fromSelection');
-        var toSelection = document.getElementById('toSelection');
-
-        fromSelection.innerHTML = '';
-        toSelection.innerHTML = '';
-
-        Object.keys(ships).forEach(shipId => {
-            fromSelection.innerHTML += `<option value="${shipId}">${shipId}</option>`;
-        });
-        products.forEach(productId => {
-            toSelection.innerHTML += `<option value="${productId}">${productId}</option>`;
-        });
-    }
-
-    // Function to detect a cycle in the graph using Depth-First Search (DFS)
     function detectCycle(node, visited, recStack, graph) {
         if (!visited[node]) {
             visited[node] = true;
@@ -250,7 +286,6 @@
         return false;
     }
 
-    // Deadlock detection function
     function detectDeadlock() {
         var visited = {};
         var recStack = {};
@@ -260,8 +295,9 @@
         });
 
         for (var node in visited) {
-            if (detectCycle(node, visited, recStack, edges)) {
-                showAlert('Deadlock detected!');
+            if (!visited[node] && detectCycle(node, visited, recStack, edges)) {
+                showAlert('Deadlock detected! Click "Resolve Deadlock" to fix.');
+                document.getElementById('deadlockResolutionBtn').style.display = 'block';
                 return true;
             }
         }
@@ -269,76 +305,64 @@
         return false;
     }
 
+
     // Deadlock resolution function
     function resolveDeadlock() {
-        var cycles = [];
-        var visited = {};
-        var recStack = {};
-        products.concat(Object.keys(ships)).forEach(node => {
-            visited[node] = false;
-            recStack[node] = false;
+        // Implementation of your deadlock resolution logic
+        var deadlockEdges = edges.get({
+            filter: function (edge) {
+                return products.includes(edge.to); // Assuming products can't be 'from'
+            }
         });
 
-        for (var node in visited) {
-            if (detectCycle(node, visited, recStack, edges)) {
-                cycles.push(node);
-            }
-        }
-
-        if (cycles.length > 0) {
-            // For simplicity, we'll just remove the first edge of the first cycle we found
-            var cycleEdges = edges.get({
-                filter: function (item) {
-                    return item.from === cycles[0] || item.to === cycles[0];
-                }
-            });
-
-            if (cycleEdges.length > 0) {
-                edges.remove(cycleEdges[0].id);
-                showAlert('Deadlock resolved by removing a relationship.');
-            }
+        if (deadlockEdges.length > 0) {
+            var edgeToRemove = deadlockEdges[Math.floor(Math.random() * deadlockEdges.length)];
+            edges.remove(edgeToRemove.id);
+            updateNetwork();
+            showAlert('Deadlock resolved by removing a relationship.');
+            document.getElementById('deadlockResolutionBtn').style.display = 'none';
         } else {
             showAlert('No deadlock to resolve.');
         }
     }
-
-    // Function to simulate a deadlock scenario for demonstration purposes
+        
     function simulateDeadlock() {
-        clearSimulation();
-        // Add some products and ships
-        addProductManually('P1');
-        addProductManually('P2');
-        addShipManually('S1');
-        addShipManually('S2');
-        // Create a circular relationship to simulate deadlock
-        assignRelationship('P1', 'S1');
-        assignRelationship('S1', 'P2');
-        assignRelationship('P2', 'S2');
-        assignRelationship('S2', 'P1');
-    }
+    clearSimulation();
+    addProductManually('P1');
+    addProductManually('P2');
+    addShipManually('S1');
+    addShipManually('S2');
+    assignRelationshipManually('P1', 'S1');
+    assignRelationshipManually('S1', 'P2');
+    assignRelationshipManually('P2', 'S2');
+    assignRelationshipManually('S2', 'P1');
+    updateNetwork();
+}
 
-    // Function to clear the simulation and reset the system
-    function clearSimulation() {
-        products = [];
-        ships = {};
-        nodes.clear();
-        edges.clear();
-        updateDropdowns();
-        showAlert('Simulation cleared.');
-    }
+// Helper function to assign relationships without UI interaction
+function assignRelationshipManually(fromId, toId) {
+    edges.add({ from: fromId, to: toId });
+}
 
-    // Function to show alert messages
-    function showAlert(message) {
-        const alertBox = document.getElementById('alertBox');
-        alertBox.style.display = 'block';
-        alertBox.textContent = message;
-        setTimeout(() => {
-            alertBox.style.display = 'none';
-        }, 5000);
-    }
-
-    // Initial dropdown update
+// Function to clear the simulation and reset the system
+function clearSimulation() {
+    products = [];
+    ships = {};
+    nodes.clear();
+    edges.clear();
     updateDropdowns();
-    </script>
+    showAlert('Simulation cleared.');
+}
+
+// Initialization function for the network
+    function initializeNetwork() {
+        container = document.getElementById('mynetwork');
+        network = new vis.Network(container, data, options);
+        updateDropdowns();
+        document.getElementById('deadlockResolutionBtn').style.display = 'none'; // Hide resolution button initially
+    }
+
+    initializeNetwork();
+</script>
 </body>
 </html>
