@@ -83,23 +83,34 @@
 </head>
 <body>
     <h1>Shipping Management System</h1>
-    <form id="shippingForm">
-        <h3>Product Information</h3>
-        <label for="product_id">Product ID:</label>
-        <input type="text" id="product_id" required>
-        
-        <label for="estimated_time">Estimated Delivery Time (hours):</label>
-        <input type="number" id="estimated_time" required>
-
-        <button type="button" onclick="addProduct()">Add Product</button>
-        <div id="alertBox"></div>
-    </form>
-    <br>
+    <!-- Add Product Section -->
     <div>
-        <button onclick="releaseShip('Ship1')">Release Ship 1</button>
-        <button onclick="releaseShip('Ship2')">Release Ship 2</button>
-        <button onclick="releaseShip('Ship3')">Release Ship 3</button>
+        <label for="newProductId">Add New Product:</label>
+        <input type="text" id="newProductId" placeholder="Enter product ID" />
+        <button onclick="addProduct()">Add Product</button>
     </div>
+
+    <!-- Add Ship Section -->
+    <div>
+        <label for="newShipId">Add New Ship:</label>
+        <input type="text" id="newShipId" placeholder="Enter ship ID" />
+        <button onclick="addShip()">Add Ship</button>
+    </div>
+
+    <!-- Relationship Assignment Section -->
+    <div>
+        <h3>Assign Relationship:</h3>
+        <label for="fromSelection">From:</label>
+        <select id="fromSelection"></select>
+
+        <label for="toSelection">To:</label>
+        <select id="toSelection"></select>
+
+        <button onclick="assignRelationship()">Assign Relationship</button>
+        <button onclick="simulateDeadlock()">Simulate Deadlock</button>
+    </div>
+
+    <div id="alertBox"></div>
     <div id="waitingArea">
         <h3>Waiting Queue</h3>
         <ul id="waitingList"></ul>
@@ -109,240 +120,225 @@
         <ul id="shipList"></ul>
     </div>
     <div id="mynetwork"></div>
+    <!-- The script will be provided in the next cell -->
+</body>
+</html>
 
     <script>
-        var products = [];
-        var ships = {
-            'Ship1': { 'instances': 3, 'available': 3 },
-            'Ship2': { 'instances': 2, 'available': 2 },
-            'Ship3': { 'instances': 4, 'available': 4 }
-        };
-
-        var waitingQueue = [];
-
-        var nodes = new vis.DataSet([
-            { id: 'Queue', label: 'Queue', group: 'queue', level: 0 },
-            // Nodes for ships dynamically added based on the 'ships' object
-            ...Object.keys(ships).flatMap(ship => 
-                Array.from({ length: ships[ship].instances }, (_, i) => ({
-                    id: `${ship}_${i+1}`,
-                    label: `${ship} #${i+1}`,
-                    group: 'ship',
-                    level: 1
-                }))
-            )
-        ]);
-
-        var edges = new vis.DataSet();
-        var container = document.getElementById('mynetwork');
-        var data = { nodes: nodes, edges: edges };
-        var options = {
-            layout: {
-                hierarchical: {
-                    direction: 'UD', // Up-Down direction for the hierarchical layout
-                    sortMethod: 'directed' // Directed sorting method for the hierarchical layout
-                }
-            },
-            nodes: {
-                shape: 'dot', // Shape of the nodes
-                size: 20, // Size of the nodes
-                font: {
-                    size: 14,
-                    color: '#ffffff'
-                },
-                borderWidth: 2
-            },
-            edges: {
-                arrows: 'to' // Arrows pointing to the direction of the edge
-            },
-            physics: {
-                enabled: false // Physics are disabled for a static network view
+    // Globals to maintain state
+    var products = [];
+    var ships = {};
+    var nodes = new vis.DataSet([]);
+    var edges = new vis.DataSet([]);
+    var container = document.getElementById('mynetwork');
+    var data = { nodes: nodes, edges: edges };
+    var options = {
+        autoResize: true,
+        height: '400px',
+        width: '100%',
+        layout: {
+            hierarchical: {
+                enabled: true,
+                levelSeparation: 150,
+                nodeSpacing: 100,
+                treeSpacing: 200,
+                blockShifting: true,
+                edgeMinimization: true,
+                parentCentralization: true,
+                direction: 'UD',        // UD, DU, LR, RL
+                sortMethod: 'directed'  // hubsize, directed
             }
-        };
-        var network = new vis.Network(container, data, options);
-
-        function addProduct() {
-            const productId = document.getElementById('product_id').value.trim();
-            const estimatedTime = parseInt(document.getElementById('estimated_time').value, 10);
-            if (!productId || isNaN(estimatedTime) || estimatedTime <= 0) {
-                showAlert('Invalid product ID or estimated time.');
-                return;
+        },
+        physics: {
+            hierarchicalRepulsion: {
+                centralGravity: 0.0,
+                springLength: 100,
+                springConstant: 0.01,
+                nodeDistance: 120,
+                damping: 0.09
             }
-
-            const newProduct = { id: productId, estimatedTime, startTime: Date.now(), status: 'waiting' };
-            products.push(newProduct);
-            waitingQueue.push(productId); // Add to the waiting queue
-            nodes.add({ id: productId, label: `Product ${productId}`, group: 'product', level: 2 });
-
-            attemptToLoadProduct(productId);
-
-            document.getElementById('product_id').value = '';
-            document.getElementById('estimated_time').value = '';
-            updateUI();
+        },
+        nodes: {
+            shape: 'dot',
+            size: 20
+        },
+        edges: {
+            smooth: true,
+            arrows: { to: true }
         }
+    };
+    var network = new vis.Network(container, data, options);
 
-        function attemptToLoadProduct(productId) {
-            const product = products.find(p => p.id === productId);
-            for (const ship in ships) {
-                if (ships[ship].available > 0) {
-                    ships[ship].available--;
-                    product.status = 'loaded';
-                    edges.add({ from: `${ship}_${ships[ship].instances - ships[ship].available}`, to: productId, arrows: 'to' });
-                    showAlert(`Product ${productId} loaded onto ${ship}.`);
-                    waitingQueue = waitingQueue.filter(id => id !== productId); // Remove the product from the waiting queue
-                    updateUI();
+    // Function to add a product to the system
+    function addProductManually(productId) {
+        if (!productId || products.includes(productId)) {
+            showAlert('Product ID is invalid or already exists.');
+            return;
+        }
+        products.push(productId);
+        nodes.add({ id: productId, label: `Product ${productId}`, group: 'product', level: 2 });
+        updateDropdowns();
+        showAlert(`Product ${productId} added.`);
+    }
+
+    // Function to add a ship to the system
+    function addShipManually(shipId) {
+        if (!shipId || ships[shipId]) {
+            showAlert('Ship ID is invalid or already exists.');
+            return;
+        }
+        ships[shipId] = { 'instances': 1, 'available': 1 };  // Assuming each ship has 1 instance for simplicity
+        nodes.add({ id: shipId, label: `Ship ${shipId}`, group: 'ship', level: 1 });
+        updateDropdowns();
+        showAlert(`Ship ${shipId} added.`);
+    }
+
+    // Function to assign a relationship between entities
+    function assignRelationship() {
+        var fromId = document.getElementById('fromSelection').value;
+        var toId = document.getElementById('toSelection').value;
+
+        if (!fromId || !toId || fromId === toId) {
+            showAlert('Invalid relationship. Cannot assign same or empty entities.');
+            return;
+        }
+        edges.add({ from: fromId, to: toId });
+        if (detectDeadlock()) {
+            resolveDeadlock();
+        }
+        showAlert(`Relationship assigned from ${fromId} to ${toId}`);
+    }
+
+    // Function to update the dropdowns with the current products and ships
+    function updateDropdowns() {
+        var fromSelection = document.getElementById('fromSelection');
+        var toSelection = document.getElementById('toSelection');
+
+        fromSelection.innerHTML = '';
+        toSelection.innerHTML = '';
+
+        Object.keys(ships).forEach(shipId => {
+            fromSelection.innerHTML += `<option value="${shipId}">${shipId}</option>`;
+        });
+        products.forEach(productId => {
+            toSelection.innerHTML += `<option value="${productId}">${productId}</option>`;
+        });
+    }
+
+    // Function to detect a cycle in the graph using Depth-First Search (DFS)
+    function detectCycle(node, visited, recStack, graph) {
+        if (!visited[node]) {
+            visited[node] = true;
+            recStack[node] = true;
+
+            var nodeEdges = graph.get({
+                filter: function (item) {
+                    return item.from === node;
+                }
+            });
+
+            for (var edgeIdx in nodeEdges) {
+                var currentNode = nodeEdges[edgeIdx].to;
+                if (!visited[currentNode] && detectCycle(currentNode, visited, recStack, graph)) {
+                    return true;
+                } else if (recStack[currentNode]) {
                     return true;
                 }
             }
-            return false; // No available ship instances
         }
+        recStack[node] = false;
+        return false;
+    }
 
-        function releaseShip(ship) {
-            const shipInstances = ships[ship].instances;
-            for (let i = 1; i <= shipInstances; i++) {
-                const shipInstanceId = `${ship}_${i}`;
-                const carriedProductEdge = edges.get({
-                    filter: function (edge) {
-                        return edge.from === shipInstanceId;
-                    }
-                })[0];
-                
-                if (carriedProductEdge) {
-                    edges.remove(carriedProductEdge);
-                    const productIndex = products.findIndex(p => p.id === carriedProductEdge.to);
-                    if (productIndex !== -1) {
-                        products[productIndex].status = 'delivered'; // Update the status
-                        products.splice(productIndex, 1); // Remove product from the list
-                    }
-                    nodes.remove(carriedProductEdge.to); // Remove product from the graph
-                    ships[ship].available++; // Increment available instances
-                    showAlert(`Ship ${shipInstanceId} released and product delivered.`);
-                    network.fit();
-                    tryToLoadWaitingProducts(); // Attempt to load any waiting products
-                    checkForDeadlock(); // Check for deadlock after releasing the ship
-                    updateUI();
-                    return; // Stop if we've released a product
-                }
-            }
-            showAlert(`No products are currently being carried by ${ship}.`);
-            checkForDeadlock(); // Check for deadlock if no product was carried
-        }
+    // Deadlock detection function
+    function detectDeadlock() {
+        var visited = {};
+        var recStack = {};
+        products.concat(Object.keys(ships)).forEach(node => {
+            visited[node] = false;
+            recStack[node] = false;
+        });
 
-        function tryToLoadWaitingProducts() {
-            waitingQueue.forEach(productId => {
-                attemptToLoadProduct(productId);
-            });
-        }
-
-        function updateUI() {
-            const waitingList = document.getElementById('waitingList');
-            waitingList.innerHTML = ''; // Clear existing list
-            waitingQueue.forEach(productId => {
-                waitingList.innerHTML += `<li>Product ID: ${productId} - Waiting</li>`;
-            });
-
-            const shipList = document.getElementById('shipList');
-            shipList.innerHTML = ''; // Clear existing list
-            Object.keys(ships).forEach(ship => {
-                shipList.innerHTML += `<li>${ship} - Available: ${ships[ship].available}</li>`;
-            });
-        }
-
-        function checkForDeadlock() {
-            // Implementing cycle detection logic
-            let deadlockExists = detectCycles();
-            if (deadlockExists) {
+        for (var node in visited) {
+            if (detectCycle(node, visited, recStack, edges)) {
                 showAlert('Deadlock detected!');
-                resolveDeadlock();
-            } else {
-                showAlert('No deadlock detected.');
+                return true;
+            }
+        }
+        showAlert('No deadlock detected.');
+        return false;
+    }
+
+    // Deadlock resolution function
+    function resolveDeadlock() {
+        var cycles = [];
+        var visited = {};
+        var recStack = {};
+        products.concat(Object.keys(ships)).forEach(node => {
+            visited[node] = false;
+            recStack[node] = false;
+        });
+
+        for (var node in visited) {
+            if (detectCycle(node, visited, recStack, edges)) {
+                cycles.push(node);
             }
         }
 
-        function detectCycles() {
-            // Create an object to track visited and recursion stack
-            let visited = {};
-            let recStack = {};
-
-            // Initialize visited and recStack for all nodes
-            nodes.get().forEach(node => {
-                visited[node.id] = false;
-                recStack[node.id] = false;
-            });
-
-            // Call the recursive helper function to detect cycle in different DFS trees
-            for (let node of nodes.get()) {
-                if (detectCycleUtil(node.id, visited, recStack))
-                    return true;
-            }
-            return false;
-        }
-
-        function detectCycleUtil(nodeId, visited, recStack) {
-            if (!visited[nodeId]) {
-                // Mark the current node as visited and part of recursion stack
-                visited[nodeId] = true;
-                recStack[nodeId] = true;
-
-                // Recur for all the vertices adjacent to this vertex
-                let nodeEdges = edges.get({
-                    filter: function (edge) {
-                        return edge.from === nodeId;
-                    }
-                });
-
-                for (let edge of nodeEdges) {
-                    if (!visited[edge.to] && detectCycleUtil(edge.to, visited, recStack)) {
-                        return true;
-                    } else if (recStack[edge.to]) {
-                        return true;
-                    }
-                }
-            }
-            // Remove the vertex from recursion stack
-            recStack[nodeId] = false;
-            return false;
-        }
-
-        function resolveDeadlock() {
-            // Strategy: release the product with the longest wait time
-            if (products.length === 0) return;
-
-            let longestWaitProduct = products.reduce((a, b) => (a.startTime < b.startTime) ? a : b);
-            releaseProduct(longestWaitProduct.id);
-            showAlert(`Deadlock resolved by releasing product ${longestWaitProduct.id}.`);
-        }
-
-        function releaseProduct(productId) {
-            // Find the ship carrying the product
-            let edgesToRemove = edges.get({
-                filter: function (edge) {
-                    return edge.to === productId;
+        if (cycles.length > 0) {
+            // For simplicity, we'll just remove the first edge of the first cycle we found
+            var cycleEdges = edges.get({
+                filter: function (item) {
+                    return item.from === cycles[0] || item.to === cycles[0];
                 }
             });
 
-            // Release the ship and the product
-            edgesToRemove.forEach(edge => {
-                let shipName = edge.from.split('_')[0];
-                ships[shipName].available++; // Increment available instances
-                edges.remove(edge); // Remove edge from the graph
-            });
-
-            products = products.filter(p => p.id !== productId); // Remove product from the list
-            nodes.remove(productId); // Remove product from the graph
-            waitingQueue = waitingQueue.filter(id => id !== productId); // Update the waiting queue
+            if (cycleEdges.length > 0) {
+                edges.remove(cycleEdges[0].id);
+                showAlert('Deadlock resolved by removing a relationship.');
+            }
+        } else {
+            showAlert('No deadlock to resolve.');
         }
+    }
 
+    // Function to simulate a deadlock scenario for demonstration purposes
+    function simulateDeadlock() {
+        clearSimulation();
+        // Add some products and ships
+        addProductManually('P1');
+        addProductManually('P2');
+        addShipManually('S1');
+        addShipManually('S2');
+        // Create a circular relationship to simulate deadlock
+        assignRelationship('P1', 'S1');
+        assignRelationship('S1', 'P2');
+        assignRelationship('P2', 'S2');
+        assignRelationship('S2', 'P1');
+    }
 
-        function showAlert(message) {
-            const alertBox = document.getElementById('alertBox');
-            alertBox.textContent = message;
-            alertBox.style.display = 'block';
-            setTimeout(() => {
-                alertBox.style.display = 'none';
-            }, 5000);
-        }
-        setInterval(checkForDeadlock, 5000);
+    // Function to clear the simulation and reset the system
+    function clearSimulation() {
+        products = [];
+        ships = {};
+        nodes.clear();
+        edges.clear();
+        updateDropdowns();
+        showAlert('Simulation cleared.');
+    }
+
+    // Function to show alert messages
+    function showAlert(message) {
+        const alertBox = document.getElementById('alertBox');
+        alertBox.style.display = 'block';
+        alertBox.textContent = message;
+        setTimeout(() => {
+            alertBox.style.display = 'none';
+        }, 5000);
+    }
+
+    // Initial dropdown update
+    updateDropdowns();
     </script>
 </body>
 </html>
