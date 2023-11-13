@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Producer-Consumer with Deadlock Detection</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        /* Add your CSS styles here */
+        /* Example */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1c1c1c;
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+        .cc {
+            display: flex;
+        }
+        .item {
+            flex: 1;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+        .heading h1 {
+            font-family: 'Sansita Swashed', cursive;
+            text-align: center;
+        }
+        .serviceBox {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: #333;
+            margin-bottom: 20px;
+        }
+        .service-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #0d6efd;
+        }
+        .description {
+            color: #ccc;
+        }
+        .status {
+            margin-top: 20px;
+            border: 1px solid #555;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #visualization {
+            width: 600px;
+            height: 400px;
+            border: 1px solid lightgray;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="cc heading">
+        <h1>Producer-Consumer with Deadlock Detection</h1>
+    </div>
+
+    <div id="container" class="serviceBox">
+        <div class="title">Buffer Status: <span id="bufferStatus">0</span>/5</div>
+        <button onclick="startProducer()">Start Producer</button>
+        <button onclick="startConsumer()">Start Consumer</button>
+        <button onclick="stopSimulation()">Stop</button>
+        <div id="deadlockStatus" class="description"></div>
+    </div>
+
+    <div class="status">
+        <div id="visualization"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <script>
+        // JavaScript code here
+        var nodes = new vis.DataSet([
+            {id: 1, label: 'Producer', shape: 'circle', color: '#7BE141'},
+            {id: 2, label: 'Buffer', shape: 'box', color: '#6E6EFD'},
+            {id: 3, label: 'Consumer', shape: 'circle', color: '#E14141'}
+        ]);
+
+        // create an array with edges
+        var edges = new vis.DataSet([
+            {from: 1, to: 2, arrows:'to'},
+            {from: 2, to: 3, arrows:'to'}
+        ]);
+
+        // create a network
+        var container = document.getElementById('visualization');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+        var options = {
+            physics: {
+                stabilization: false
+            },
+            autoResize: true,
+            layout: {
+                hierarchical: {
+                    direction: 'LR',
+                    sortMethod: 'directed'
+                }
+            }
+        };
+        var network = new vis.Network(container, data, options);
+        // Producer-Consumer logic with deadlock detection and resolution
+        const bufferSize = 5;
+        let buffer = [];
+        let mutex = 1; // Mutex semaphore initialized to 1
+        let items = 0; // Items semaphore
+        let empty = bufferSize; // Empty semaphore
+        let deadlockDetected = false;
+        let producerInterval, consumerInterval;
+
+        // Utility functions for semaphore operations
+        async function wait(semaphoreVar) {
+            while (window[semaphoreVar] <= 0) {
+                await new Promise(resolve => setTimeout(resolve, 100)); // Check every 100ms
+            }
+            window[semaphoreVar]--;
+            updateVisualization();
+        }
+
+        function signal(semaphoreVar) {
+            window[semaphoreVar]++;
+            updateVisualization();
+        }
+
+        // Update the Vis.js visualization based on the current buffer state
+        function updateVisualization() {
+            nodes.update({id: 2, label: `Buffer (${buffer.length}/${bufferSize})`});
+            document.getElementById('bufferStatus').innerText = buffer.length;
+        }
+
+        // Producer function
+        async function producer() {
+            while (!deadlockDetected) {
+                await wait('empty');
+                await wait('mutex');
+                if (buffer.length < bufferSize) {
+                    buffer.push('Item');
+                    logStatus('Produced an item. Buffer size: ' + buffer.length);
+                    signal('mutex');
+                    signal('items');
+                } else {
+                    signal('mutex'); // Release mutex if buffer is full
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Produce every 1 second
+            }
+            // If deadlock detected, producer stops producing
+        }
+
+        // Consumer function
+        async function consumer() {
+            while (!deadlockDetected) {
+                await wait('items');
+                await wait('mutex');
+                if (buffer.length > 0) {
+                    buffer.shift();
+                    logStatus('Consumed an item. Buffer size: ' + buffer.length);
+                    signal('mutex');
+                    signal('empty');
+                } else {
+                    signal('mutex'); // Release mutex if buffer is empty
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Consume every 1 second
+            }
+            // If deadlock detected, consumer stops consuming
+        }
+
+        // Deadlock detection function
+        <!-- Deadlock detection function -->
+function detectDeadlock() {
+    if ((empty === 0 && buffer.length === bufferSize) || (items === 0 && buffer.length === 0)) {
+        // Buffer is either full and no 'empty' slots, or buffer is empty and no 'items'
+        deadlockDetected = true;
+        updateColorsForDeadlock();
+        document.getElementById('deadlockStatus').innerText = 'Deadlock detected!';
+        resolveDeadlock();
+    }
+}
+
+        function resolveDeadlock() {
+            // Instead of resetting, we let one operation proceed to clear the deadlock.
+            // If buffer is full, we consume an item. If buffer is empty, we produce an item.
+            if (buffer.length === bufferSize) {
+                // Buffer is full, consume one item to resolve deadlock
+                buffer.shift();
+                signal('empty');
+            } else if (buffer.length === 0) {
+                // Buffer is empty, produce one item to resolve deadlock
+                buffer.push('Item');
+                signal('items');
+            }
+            deadlockDetected = false;
+            updateColorsForNormalOperation();
+            document.getElementById('deadlockStatus').innerText = 'Deadlock resolved. Operations can continue.';
+        }
+        function updateColorsForDeadlock() {
+            nodes.update([
+                {id: 1, color: '#FF0000'}, // Red indicates a problem (deadlock)
+                {id: 3, color: '#FF0000'}  // Red indicates a problem (deadlock)
+            ]);
+        }
+
+        function updateColorsForNormalOperation() {
+            nodes.update([
+                {id: 1, color: '#7BE141'}, // Original color for producer
+                {id: 2, label: `Buffer (${buffer.length}/${bufferSize})`, color: '#6E6EFD'}, // Original color for buffer
+                {id: 3, color: '#E14141'}  // Original color for consumer
+            ]);
+        }
+
+
+        // Utility function to log the status
+        function logStatus(message) {
+            console.log(message); // Log to console or add to a log element on the page
+        }
+
+        // Start and Stop functions for the simulation
+        function startProducer() {
+            if (!producerInterval) {
+                producerInterval = setInterval(producer, 1000);
+            }
+        }
+
+        function startConsumer() {
+            if (!consumerInterval) {
+                consumerInterval = setInterval(consumer, 1000);
+            }
+        }
+
+        function stopSimulation() {
+            clearInterval(producerInterval);
+            clearInterval(consumerInterval);
+            producerInterval = consumerInterval = null;
+            resolveDeadlock(); // For the sake of example, we resolve the deadlock on stop
+        }
+    </script>
+</body>
+</html>
