@@ -181,34 +181,31 @@
             const accountNumber = document.getElementById('account_number').value;
             const amount = document.getElementById('amount').value;
             const recipientAccount = document.getElementById('recipient_account').value;
-    
+
             if (isNaN(accountNumber) || isNaN(recipientAccount)) {
                 showAlert('Account numbers must be valid numbers.');
                 return;
             }
-    
+
             if (accountNumber === recipientAccount) {
                 showAlert('A transaction cannot refer to the same account.');
                 return;
             }
-    
-            if (transactions.some(t => t.id === accountNumber)) {
+            if (nodes.get(accountNumber) !== null) {
                 showAlert(`Account ${accountNumber} already has an ongoing transaction.`);
                 return;
             }
-    
             transactions.push({ id: accountNumber, waiting_for: recipientAccount, firstName: firstName, lastName: lastName, amount: amount });
-    
+
             nodes.add({
-                id: accountNumber, 
+                id: accountNumber,
                 label: `Account ${accountNumber}`,
                 title: `Name: ${firstName} ${lastName}\nAccount: ${accountNumber}\nAmount: $${amount}`
             });
-    
+
             edges.add({ from: accountNumber, to: recipientAccount });
             showAlert(`Transaction from account ${accountNumber} to account ${recipientAccount} added.`);
             network.setData({ nodes: nodes, edges: edges });
-            // Fit the network to ensure all nodes are visible without scrolling
             network.fit({
                 animation: {
                     duration: 1000,
@@ -272,26 +269,59 @@
             if (index !== -1) {
                 const deadlockedTransaction = transactions[index];
                 transactions.splice(index, 1);
-                nodes.remove({ id: deadlockedTransaction.id });
-                edges.remove({ from: deadlockedTransaction.id });
+                nodes.update({id: deadlockedTransaction.id, color: {background: 'red', border: 'darkred'}});
+                setTimeout(() => {
+                    removeNodeAndEdges(deadlockedTransaction.id);
+                    nodes.forEach((node) => {
+                        const connectedEdges = edges.get({
+                            filter: function (edge) {
+                                return edge.from === node.id || edge.to === node.id;
+                            }
+                        });
+                        if (connectedEdges.length === 0) {
+                            nodes.update({ id: node.id, color: { background: 'red' }, size: 16 });
+                            setTimeout(() => {
+                                nodes.remove({ id: node.id });
+                                showAlert(`Removed node ${node.id} with no dependencies.`);
+                            }, 1000); 
+                        }
+                    });
+                }, 1500); 
                 showAlert(`Deadlock resolved: Terminated transaction ${deadlockedTransaction.id}.`);
-                network.fit({
-                    animation: {
-                        duration: 1000,
-                        easingFunction: 'easeInOutQuad'
-                    }
-                });
             }
         }
-    
-        function showAlert(message) {
-            const alertBox = document.getElementById('alertBox');
-            alertBox.style.display = 'block';
-            alertBox.textContent = message;
-            setTimeout(() => {
-                alertBox.style.display = 'none';
-            }, 5000);
+
+        function removeNodeAndEdges(nodeId) {
+            // Remove all edges connected to the node first to prevent orphaned edges.
+            edges.get({
+                filter: function (edge) {
+                    return edge.from === nodeId || edge.to === nodeId;
+                }
+            }).forEach(edge => edges.remove({ id: edge.id }));
+
+            // Then remove the node itself.
+            nodes.remove({ id: nodeId });
+
+            // Update the network to reflect the changes.
+            network.setData({ nodes: nodes, edges: edges });
+            
+            // Optionally, fit the network to ensure all nodes are visible.
+            network.fit({
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
         }
+
+    function showAlert(message) {
+        const alertBox = document.getElementById('alertBox');
+        alertBox.style.display = 'block';
+        alertBox.textContent = message;
+        setTimeout(() => {
+            alertBox.style.display = 'none';
+        }, 5000);
+    }
     </script>    
 </body>
 </html>
