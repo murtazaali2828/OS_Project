@@ -5,6 +5,8 @@
     <title>Producer-Consumer with Deadlock Detection</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
     <style>
+        /* Add your CSS styles here */
+        /* Example */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #1c1c1c;
@@ -72,14 +74,15 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
     <script>
-        let bufferSize; 
+        let bufferSize; // Declare bufferSize as a variable
         let buffer = [];
-        let mutex = 1; // Mutex semaphore 
+        let mutex = 1; // Mutex semaphore initialized to 1
         let items = 0; // Items semaphore
-        let empty; // Empty semaphore
+        let empty; // Empty semaphore, to be set after user input
         let deadlockDetected = false;
         let producerInterval, consumerInterval;
         var flag = 0;
+        // Initialize the buffer size on document load
         document.addEventListener('DOMContentLoaded', (event) => {
             initializeBufferSize();
         });
@@ -93,9 +96,9 @@
                 size = 5;
             }
         
-            bufferSize = size; 
-            empty = bufferSize; 
-            updateVisualization(); 
+            bufferSize = size; // Set the buffer size based on user input
+            empty = bufferSize; // Set the 'empty' semaphore based on the buffer size
+            updateVisualization(); // Update the visualization with the new buffer size
         }
         
         // vis.js visualization setup
@@ -213,13 +216,13 @@
                 //sleep(100);
                 //alert("gghg");
                 document.getElementById('deadlockStatus').innerText = 'Consumer started.';
-                startConsumer();
+                nstartConsumer();
             }
             else{
                 //alert("enter2");
                 //sleep(100);
                 document.getElementById('deadlockStatus').innerText = 'Producer started.';
-                startProducer();
+                nstartProducer();
             }
         }
         
@@ -245,10 +248,21 @@
                 document.getElementById('deadlockStatus').innerText = 'Producer started.';
             }
         }
-        
+        function nstartProducer() {
+            if (!producerInterval) {
+                producerInterval = setInterval(producer, (Math.random()*10000)%1000);
+                document.getElementById('deadlockStatus').innerText = 'Producer started.';
+            }
+        }
         function startConsumer() {
             if (!consumerInterval) {
                 consumerInterval = setInterval(consumer, 1000);
+                document.getElementById('deadlockStatus').innerText = 'Consumer started.';
+            }
+        }
+        function nstartConsumer() {
+            if (!consumerInterval) {
+                consumerInterval = setInterval(consumer, (Math.random()*10000)%1000);
                 document.getElementById('deadlockStatus').innerText = 'Consumer started.';
             }
         }
@@ -268,13 +282,14 @@
         }
         
         function resetSimulation() {
-            stopSimulation();
+            /*stopSimulation();
             buffer = [];
             mutex = 1;
             items = 0;
             empty = bufferSize;
             updateVisualization();
-            document.getElementById('deadlockStatus').innerText = 'Simulation reset.';
+            document.getElementById('deadlockStatus').innerText = 'Simulation reset.';*/
+            window.location.reload();
         }
         
         function logStatus(message) {
