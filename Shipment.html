@@ -116,43 +116,35 @@
         var container;
         var network;
         var data = { nodes: nodes, edges: edges };
-        var options = {
-            autoResize: true,
-            height: '400px',
-            width: '100%',
-            layout: {
-                hierarchical: {
-                    enabled: true,
-                    levelSeparation: 150,
-                    nodeSpacing: 100,
-                    treeSpacing: 200,
-                    blockShifting: true,
-                    edgeMinimization: true,
-                    parentCentralization: true,
-                    direction: 'UD',        
-                    sortMethod: 'directed'  
-                }
-            },
-            interaction: {
-                zoomView: false, 
-                dragView: false  
-            },
-            physics: {
-                hierarchicalRepulsion: {
-                    centralGravity: 0.0,
-                    springLength: 100,
-                    springConstant: 0.01,
-                    nodeDistance: 120,
-                    damping: 0.09
-                }
-            },
+        const options = {
             nodes: {
                 shape: 'dot',
-                size: 20
+                size: 30,
+                font: {
+                    size: 14,
+                    color: '#ffffff'
+                },
+                borderWidth: 2
             },
             edges: {
-                smooth: true,
-                arrows: { to: true }
+                width: 2,
+                arrows: 'to'
+            },
+            interaction: {
+                zoomView: false, // Disables zooming
+                dragView: false  // Disables dragging/panning
+            },
+            physics: {
+                forceAtlas2Based: {
+                    gravitationalConstant: -26,
+                    centralGravity: 0.005,
+                    springLength: 230,
+                    springConstant: 0.18
+                },
+                maxVelocity: 146,
+                solver: 'forceAtlas2Based',
+                timestep: 0.35,
+                stabilization: { iterations: 150 }
             }
         };
         
@@ -246,7 +238,8 @@
         edges.add({ from: fromId, to: toId });
         updateNetwork();
         if (detectDeadlock()) {
-            resolveDeadlock();
+            //showAlert("Deadlock Detected");
+            return;
         }
         showAlert(`Relationship assigned from ${fromId} to ${toId}`);
     }
