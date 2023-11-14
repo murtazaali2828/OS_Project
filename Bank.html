@@ -155,8 +155,8 @@
                 arrows: 'to'
             },
             interaction: {
-                zoomView: false, // Disables zooming
-                dragView: false  // Disables dragging/panning
+                zoomView: false, 
+                dragView: false 
             },
             physics: {
                 forceAtlas2Based: {
@@ -290,7 +290,7 @@
                 showAlert(`Deadlock resolved: Terminated transaction ${deadlockedTransaction.id}.`);
             }
         }
-
+        //remove connected edges first to prevent orphaning then go for removing current node
         function removeNodeAndEdges(nodeId) {
             edges.get({
                 filter: function (edge) {
@@ -299,6 +299,7 @@
             }).forEach(edge => edges.remove({ id: edge.id }));
             nodes.remove({ id: nodeId });
             network.setData({ nodes: nodes, edges: edges });
+            
             network.fit({
                 animation: {
                     duration: 1000,

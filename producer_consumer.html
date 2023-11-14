@@ -5,8 +5,6 @@
     <title>Producer-Consumer with Deadlock Detection</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
     <style>
-        /* Add your CSS styles here */
-        /* Example */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #1c1c1c;
@@ -96,12 +94,11 @@
                 size = 5;
             }
         
-            bufferSize = size; // Set the buffer size based on user input
-            empty = bufferSize; // Set the 'empty' semaphore based on the buffer size
-            updateVisualization(); // Update the visualization with the new buffer size
+            bufferSize = size; 
+            empty = bufferSize; 
+            updateVisualization();
         }
         
-        // vis.js visualization setup
         var nodes = new vis.DataSet([
             { id: 1, label: 'Producer', shape: 'circle', color: '#7BE141' },
             { id: 2, label: 'Buffer', shape: 'box', color: '#6E6EFD' },
@@ -293,7 +290,7 @@
         }
         
         function logStatus(message) {
-            console.log(message); // Log to console or add to a log element on the page
+            console.log(message); 
         }
                 
     </script>

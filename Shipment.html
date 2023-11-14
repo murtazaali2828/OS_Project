@@ -131,8 +131,8 @@
                 arrows: 'to'
             },
             interaction: {
-                zoomView: false, // Disables zooming
-                dragView: false  // Disables dragging/panning
+                zoomView: false, 
+                dragView: false  
             },
             physics: {
                 forceAtlas2Based: {
@@ -215,7 +215,7 @@
         var productId = document.getElementById('newProductId').value.trim();
         if (productId) {
             addProductManually(productId);
-            document.getElementById('newProductId').value = ''; // Clear the input
+            document.getElementById('newProductId').value = ''; 
         }
     }
 
@@ -223,7 +223,7 @@
         var shipId = document.getElementById('newShipId').value.trim();
         if (shipId) {
             addShipManually(shipId);
-            document.getElementById('newShipId').value = ''; // Clear the input
+            document.getElementById('newShipId').value = ''; 
         }
     }
 
@@ -288,10 +288,9 @@
     }
 
     function resolveDeadlock() {
-        // Implementation of your deadlock resolution logic
         var deadlockEdges = edges.get({
             filter: function (edge) {
-                return products.includes(edge.to); // Assuming products can't be 'from'
+                return products.includes(edge.to); 
             }
         });
 
@@ -319,12 +318,10 @@
     updateNetwork();
 }
 
-// Helper function to assign relationships without UI interaction
 function assignRelationshipManually(fromId, toId) {
     edges.add({ from: fromId, to: toId });
 }
 
-// Function to clear the simulation and reset the system
 function clearSimulation() {
     products = [];
     ships = {};
@@ -339,7 +336,7 @@ function clearSimulation() {
         container = document.getElementById('mynetwork');
         network = new vis.Network(container, data, options);
         updateDropdowns();
-        document.getElementById('deadlockResolutionBtn').style.display = 'none'; // Hide resolution button initially
+        document.getElementById('deadlockResolutionBtn').style.display = 'none'; 
     }
 
     initializeNetwork();
