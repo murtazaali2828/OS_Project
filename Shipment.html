@@ -6,205 +6,363 @@
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
         body {
-     font-family: 'Arial', sans-serif;
-     background-color: #1c1c1c;
-     color: white;
-     padding: 20px;
-     box-sizing: border-box;
-     display: flex;
-     flex-direction: column;
-     justify-content: center;
-     align-items: center;
-     min-height: calc(100vh - 40px);
-     margin: 0;
- }
- 
- form {
-     background: #333;
-     padding: 20px;
-     border-radius: 10px;
-     box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-     width: 60%;
-     max-width: 500px;
- }
- 
- h1, h2, h3 {
-     text-align: center;
-     color: #0d6efd;
- }
- 
- label {
-     color: #0d6efd;
-     display: block;
-     margin: 10px 0 5px;
- }
- 
- input, select, button {
-     width: 100%;
-     padding: 10px;
-     margin-bottom: 20px;
-     border-radius: 5px;
-     border: none;
-     box-sizing: border-box;
- }
- 
- input[type="submit"], button {
-     background-color: #0d6efd;
-     color: white;
-     cursor: pointer;
-     transition: background-color 0.3s ease;
- }
- 
- input[type="submit"]:hover, button:hover {
-     background-color: #0b5ed7;
- }
- 
- input[type="submit"]:active, button:active {
-     background-color: #0a58ca;
- }
- 
- #alertBox {
-     margin-top: 20px;
-     padding: 20px;
-     background-color: #f44336;
-     color: white;
-     display: none;
-     text-align: center;
-     border-radius: 5px;
- }
- 
- #mynetwork {
-     width: 100%;
-     height: 400px;
-     border: 1px solid lightgray;
-     margin-top: 15px;
- }
-     </style>
+            font-family: 'Arial', sans-serif;
+            background-color: #1c1c1c;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 40px);
+            margin: 0;
+        }
+
+        form {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            width: 60%;
+            max-width: 500px;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #0d6efd;
+        }
+
+        label {
+            color: #0d6efd;
+            display: block;
+            margin: 10px 0 5px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: none;
+            box-sizing: border-box;
+        }
+
+        input[type="submit"], button {
+            background-color: #0d6efd;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        input[type="submit"]:hover, button:hover {
+            background-color: #0b5ed7;
+        }
+
+        input[type="submit"]:active, button:active {
+            background-color: #0a58ca;
+        }
+
+        #alertBox {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f44336;
+            color: white;
+            display: none;
+            text-align: center;
+            border-radius: 5px;
+        }
+
+        #mynetwork {
+            width: 100%;
+            height: 400px;
+            border: 1px solid lightgray;
+            margin-top: 15px;
+        }
+    </style>
 </head>
 <body>
     <h1>Shipping Management System</h1>
-    <form id="shippingForm">
-        <!-- Product Information Form -->
-        <h3>Product Information</h3>
-        <label for="product_id">Product ID:</label>
-        <input type="text" id="product_id" required>
-        
-        <label for="estimated_time">Estimated Delivery Time (hours):</label>
-        <input type="number" id="estimated_time" required>
-
-        <button type="button" onclick="addProduct()">Add Product</button>
-        <div id="alertBox"></div>
-    </form>
-    <br>
-    <!-- Destination Release Buttons -->
+    <!-- Add Product Section -->
     <div>
-        <button onclick="releaseShip('Ship1')">Release Ship 1</button>
-        <button onclick="releaseShip('Ship2')">Release Ship 2</button>
-        <button onclick="releaseShip('Ship3')">Release Ship 3</button>
+        <label for="newProductId">Add New Product:</label>
+        <input type="text" id="newProductId" placeholder="Enter product ID" />
+        <button onclick="addProduct()">Add Product</button>
     </div>
 
-    <!-- Network Visualization -->
-    <div id="mynetwork"></div>
+    <!-- Add Ship Section -->
+    <div>
+        <label for="newShipId">Add New Ship:</label>
+        <input type="text" id="newShipId" placeholder="Enter ship ID" />
+        <button onclick="addShip()">Add Ship</button>
+    </div>
 
+    <!-- Relationship Assignment Section -->
+    <div>
+        <h3>Assign Relationship:</h3>
+        <label for="fromSelection">From:</label>
+        <select id="fromSelection"></select>
+
+        <label for="toSelection">To:</label>
+        <select id="toSelection"></select>
+        <button onclick="assignRelationship()">Assign Relationship</button>
+        <button onclick="simulateDeadlock()">Simulate Deadlock</button>
+        <button onclick="detectDeadlock()">Detect Deadlock</button>
+        <button id="deadlockResolutionBtn" onclick="resolveDeadlock()" >Resolve Deadlock</button>
+    </div>
+
+    <div id="alertBox"></div>
+    <div id="mynetwork"></div>
     <script>
-        // Setup vis.js network
-        const products = [];
-        const ships = ['Ship1', 'Ship2', 'Ship3'];
-        const nodes = new vis.DataSet([
-            ...ships.map(ship => ({id: ship, label: ship, group: 'ship', level: 1})),
-            { id: 'Queue', label: 'Queue', group: 'queue', level: 0 }
-        ]);
-        const edges = new vis.DataSet();
-        const container = document.getElementById('mynetwork');
-        const data = { nodes, edges };
-        const options = {
+        // Globals to maintain state
+        var products = [];
+        var ships = {};
+        var nodes = new vis.DataSet([]);
+        var edges = new vis.DataSet([]);
+        var container;
+        var network;
+        var data = { nodes: nodes, edges: edges };
+        var options = {
+            autoResize: true,
+            height: '400px',
+            width: '100%',
             layout: {
                 hierarchical: {
-                    direction: 'LR',
-                    sortMethod: 'directed',
-                    nodeSpacing: 200,
-                    treeSpacing: 400
+                    enabled: true,
+                    levelSeparation: 150,
+                    nodeSpacing: 100,
+                    treeSpacing: 200,
+                    blockShifting: true,
+                    edgeMinimization: true,
+                    parentCentralization: true,
+                    direction: 'UD',        // UD, DU, LR, RL
+                    sortMethod: 'directed'  // hubsize, directed
+                }
+            },
+            physics: {
+                hierarchicalRepulsion: {
+                    centralGravity: 0.0,
+                    springLength: 100,
+                    springConstant: 0.01,
+                    nodeDistance: 120,
+                    damping: 0.09
                 }
             },
             nodes: {
                 shape: 'dot',
-                size: 30,
-                font: {
-                    size: 14,
-                    color: '#ffffff'
-                },
-                borderWidth: 2
+                size: 20
             },
             edges: {
-                width: 2,
-                arrows: 'to'
-            },
-            interaction: {
-                zoomView: false,
-                dragView: false
-            },
-            physics: false
+                smooth: true,
+                arrows: { to: true }
+            }
         };
-        const network = new vis.Network(container, data, options);
-
-        function addProduct() {
-            const productId = document.getElementById('product_id').value;
-            const estimatedTime = parseInt(document.getElementById('estimated_time').value);
-            if (!productId || isNaN(estimatedTime) || estimatedTime < 0) {
-                showAlert('Invalid product ID or estimated time.');
+        
+        // Function to add a product to the system
+        function addProductManually(productId) {
+            if (!productId || products.includes(productId)) {
+                showAlert('Product ID is invalid or already exists.');
                 return;
             }
-            products.push({ id: productId, estimatedTime, startTime: Date.now() });
-            nodes.add({ id: productId, label: productId, group: 'product', level: 1 });
-
-            // Attempt to load onto a ship
-            attemptToLoadProduct(productId);
-
-            showAlert('Product added.');
-            network.fit();
+            products.push(productId);
+            nodes.add({ id: productId, label: `Product ${productId}`, group: 'product' });
+            updateNetwork();
+            updateDropdowns();
+            showAlert(`Product ${productId} added.`);
         }
-
-        function attemptToLoadProduct(productId) {
-            // Priority: Shortest delivery time or longest waiting time
-            products.sort((a, b) => a.estimatedTime - b.estimatedTime || a.startTime - b.startTime);
-            const product = products.find(p => p.id === productId);
-            for (const ship of ships) {
-                if (!edges.get().some(e => e.from === ship)) {
-                    edges.add({ from: ship, to: productId, arrows: 'to' });
-                    showAlert(`Product ${productId} loaded onto ${ship}.`);
-                    network.fit();
-                    return;
-                }
+        
+        // Function to add a ship to the system
+        function addShipManually(shipId) {
+            if (!shipId || ships[shipId]) {
+                showAlert('Ship ID is invalid or already exists.');
+                return;
             }
-            setTimeout(() => {
-                attemptToLoadProduct(productId);
-            }, 5000); // Try again in 5 seconds
+            ships[shipId] = { 'instances': 1, 'available': 1 };
+            nodes.add({ id: shipId, label: `Ship ${shipId}`, group: 'ship' });
+            updateNetwork();
+            updateDropdowns();
+            showAlert(`Ship ${shipId} added.`);
         }
-
-        function releaseShip(ship) {
-            const carriedProductEdge = edges.get().find(e => e.from === ship);
-            if (carriedProductEdge) {
-                edges.remove(carriedProductEdge);
-                const productIndex = products.findIndex(p => p.id === carriedProductEdge.to);
-                if (productIndex !== -1) {
-                    products.splice(productIndex, 1);
-                }
-                nodes.remove(carriedProductEdge.to);
-                showAlert(`Ship ${ship} released and product delivered.`);
-                network.fit();
-            } else {
-                showAlert(`Ship ${ship} is not carrying any product.`);
+        
+        // Function to update the network visualization
+        function updateNetwork() {
+            if (network) {
+                network.setData({ nodes: nodes, edges: edges });
             }
         }
+        
+        // Function to update the dropdowns with the current products and ships
+        // Function to update the dropdowns with the current products and ships
+    function updateDropdowns() {
+        var fromSelection = document.getElementById('fromSelection');
+        var toSelection = document.getElementById('toSelection');
 
+        // Reset the dropdowns
+        fromSelection.innerHTML = '<option value="">Select From...</option>';
+        toSelection.innerHTML = '<option value="">Select To...</option>';
+
+        // Add ships to both 'from' and 'to' dropdowns
+        Object.keys(ships).forEach(shipId => {
+            var option = `<option value="${shipId}">${shipId}</option>`;
+            fromSelection.innerHTML += option;
+            toSelection.innerHTML += option;
+        });
+
+        // Add products to both 'from' and 'to' dropdowns
+        products.forEach(productId => {
+            var option = `<option value="${productId}">${productId}</option>`;
+            fromSelection.innerHTML += option;
+            toSelection.innerHTML += option;
+        });
+    }
+
+        
+        // Function to show alert messages
         function showAlert(message) {
             const alertBox = document.getElementById('alertBox');
-            alertBox.textContent = message;
             alertBox.style.display = 'block';
+            alertBox.textContent = message;
             setTimeout(() => {
                 alertBox.style.display = 'none';
             }, 5000);
         }
-    </script>    
+        
+        // Function to handle adding a product from the UI
+    function addProduct() {
+        var productId = document.getElementById('newProductId').value.trim();
+        if (productId) {
+            addProductManually(productId);
+            document.getElementById('newProductId').value = ''; // Clear the input
+        }
+    }
+
+    // Function to handle adding a ship from the UI
+    function addShip() {
+        var shipId = document.getElementById('newShipId').value.trim();
+        if (shipId) {
+            addShipManually(shipId);
+            document.getElementById('newShipId').value = ''; // Clear the input
+        }
+    }
+
+    // Function to assign a relationship between entities
+    function assignRelationship() {
+        var fromId = document.getElementById('fromSelection').value;
+        var toId = document.getElementById('toSelection').value;
+
+        if (!fromId || !toId || fromId === toId) {
+            showAlert('Invalid relationship. Cannot assign same or empty entities.');
+            return;
+        }
+        edges.add({ from: fromId, to: toId });
+        updateNetwork();
+        if (detectDeadlock()) {
+            resolveDeadlock();
+        }
+        showAlert(`Relationship assigned from ${fromId} to ${toId}`);
+    }
+
+    function detectCycle(node, visited, recStack, graph) {
+        if (!visited[node]) {
+            visited[node] = true;
+            recStack[node] = true;
+
+            var nodeEdges = graph.get({
+                filter: function (item) {
+                    return item.from === node;
+                }
+            });
+
+            for (var edgeIdx in nodeEdges) {
+                var currentNode = nodeEdges[edgeIdx].to;
+                if (!visited[currentNode] && detectCycle(currentNode, visited, recStack, graph)) {
+                    return true;
+                } else if (recStack[currentNode]) {
+                    return true;
+                }
+            }
+        }
+        recStack[node] = false;
+        return false;
+    }
+
+    function detectDeadlock() {
+        var visited = {};
+        var recStack = {};
+        products.concat(Object.keys(ships)).forEach(node => {
+            visited[node] = false;
+            recStack[node] = false;
+        });
+
+        for (var node in visited) {
+            if (!visited[node] && detectCycle(node, visited, recStack, edges)) {
+                showAlert('Deadlock detected! Click "Resolve Deadlock" to fix.');
+                document.getElementById('deadlockResolutionBtn').style.display = 'block';
+                return true;
+            }
+        }
+        showAlert('No deadlock detected.');
+        return false;
+    }
+
+
+    // Deadlock resolution function
+    function resolveDeadlock() {
+        // Implementation of your deadlock resolution logic
+        var deadlockEdges = edges.get({
+            filter: function (edge) {
+                return products.includes(edge.to); // Assuming products can't be 'from'
+            }
+        });
+
+        if (deadlockEdges.length > 0) {
+            var edgeToRemove = deadlockEdges[Math.floor(Math.random() * deadlockEdges.length)];
+            edges.remove(edgeToRemove.id);
+            updateNetwork();
+            showAlert('Deadlock resolved by removing a relationship.');
+            document.getElementById('deadlockResolutionBtn').style.display = 'none';
+        } else {
+            showAlert('No deadlock to resolve.');
+        }
+    }
+        
+    function simulateDeadlock() {
+    clearSimulation();
+    addProductManually('P1');
+    addProductManually('P2');
+    addShipManually('S1');
+    addShipManually('S2');
+    assignRelationshipManually('P1', 'S1');
+    assignRelationshipManually('S1', 'P2');
+    assignRelationshipManually('P2', 'S2');
+    assignRelationshipManually('S2', 'P1');
+    updateNetwork();
+}
+
+// Helper function to assign relationships without UI interaction
+function assignRelationshipManually(fromId, toId) {
+    edges.add({ from: fromId, to: toId });
+}
+
+// Function to clear the simulation and reset the system
+function clearSimulation() {
+    products = [];
+    ships = {};
+    nodes.clear();
+    edges.clear();
+    updateDropdowns();
+    showAlert('Simulation cleared.');
+}
+
+// Initialization function for the network
+    function initializeNetwork() {
+        container = document.getElementById('mynetwork');
+        network = new vis.Network(container, data, options);
+        updateDropdowns();
+        document.getElementById('deadlockResolutionBtn').style.display = 'none'; // Hide resolution button initially
+    }
+
+    initializeNetwork();
+</script>
 </body>
 </html>
