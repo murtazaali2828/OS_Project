@@ -83,21 +83,16 @@
 </head>
 <body>
     <h1>Shipping Management System</h1>
-    <!-- Add Product Section -->
     <div>
         <label for="newProductId">Add New Product:</label>
         <input type="text" id="newProductId" placeholder="Enter product ID" />
         <button onclick="addProduct()">Add Product</button>
     </div>
-
-    <!-- Add Ship Section -->
     <div>
         <label for="newShipId">Add New Ship:</label>
         <input type="text" id="newShipId" placeholder="Enter ship ID" />
         <button onclick="addShip()">Add Ship</button>
     </div>
-
-    <!-- Relationship Assignment Section -->
     <div>
         <h3>Assign Relationship:</h3>
         <label for="fromSelection">From:</label>
@@ -114,7 +109,6 @@
     <div id="alertBox"></div>
     <div id="mynetwork"></div>
     <script>
-        // Globals to maintain state
         var products = [];
         var ships = {};
         var nodes = new vis.DataSet([]);
@@ -135,9 +129,13 @@
                     blockShifting: true,
                     edgeMinimization: true,
                     parentCentralization: true,
-                    direction: 'UD',        // UD, DU, LR, RL
-                    sortMethod: 'directed'  // hubsize, directed
+                    direction: 'UD',        
+                    sortMethod: 'directed'  
                 }
+            },
+            interaction: {
+                zoomView: false, 
+                dragView: false  
             },
             physics: {
                 hierarchicalRepulsion: {
@@ -191,13 +189,9 @@
             }
         }
         
-        // Function to update the dropdowns with the current products and ships
-        // Function to update the dropdowns with the current products and ships
     function updateDropdowns() {
         var fromSelection = document.getElementById('fromSelection');
         var toSelection = document.getElementById('toSelection');
-
-        // Reset the dropdowns
         fromSelection.innerHTML = '<option value="">Select From...</option>';
         toSelection.innerHTML = '<option value="">Select To...</option>';
 
@@ -216,8 +210,6 @@
         });
     }
 
-        
-        // Function to show alert messages
         function showAlert(message) {
             const alertBox = document.getElementById('alertBox');
             alertBox.style.display = 'block';
@@ -227,7 +219,6 @@
             }, 5000);
         }
         
-        // Function to handle adding a product from the UI
     function addProduct() {
         var productId = document.getElementById('newProductId').value.trim();
         if (productId) {
@@ -236,7 +227,6 @@
         }
     }
 
-    // Function to handle adding a ship from the UI
     function addShip() {
         var shipId = document.getElementById('newShipId').value.trim();
         if (shipId) {
@@ -245,7 +235,6 @@
         }
     }
 
-    // Function to assign a relationship between entities
     function assignRelationship() {
         var fromId = document.getElementById('fromSelection').value;
         var toId = document.getElementById('toSelection').value;
@@ -305,8 +294,6 @@
         return false;
     }
 
-
-    // Deadlock resolution function
     function resolveDeadlock() {
         // Implementation of your deadlock resolution logic
         var deadlockEdges = edges.get({

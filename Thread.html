@@ -81,11 +81,11 @@
                 arrows: 'to'
             },
             physics: {
-                enabled: false // Disable physics for a stable network
+                enabled: false // Disable physics 
             },
             interaction: {
-                zoomView: false, // Disables zooming
-                dragView: false  // Disables dragging/panning
+                zoomView: false, 
+                dragView: false  
             }
         };
         const network = new vis.Network(container, data, options);
@@ -95,11 +95,11 @@
         const maxResources = 3;
         let threads = {};
         let resources = {};
-        let deadlockChains = []; // Store detected deadlocks
+        let deadlockChains = []; // detected deadlocks
 
         function initializeThreadsAndResources() {
-            threads = {}; // Reset threads
-            resources = {}; // Reset resources
+            threads = {}; 
+            resources = {}; 
             nodes.clear();
             edges.clear();
             let threadListHTML = '';
@@ -126,7 +126,7 @@
         function displayStatus(message, isError = false) {
             const statusDiv = document.getElementById('status');
             statusDiv.textContent = message;
-            statusDiv.style.color = isError ? '#FF5733' : '#FFC107'; // Red for errors, yellow for status
+            statusDiv.style.color = isError ? '#FF5733' : '#FFC107'; 
         }
 function createManualConnection(fromId, toId) {
     const fromNode = nodes.get(fromId);

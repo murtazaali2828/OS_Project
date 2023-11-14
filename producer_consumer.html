@@ -5,8 +5,6 @@
     <title>Producer-Consumer with Deadlock Detection</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
     <style>
-        /* Add your CSS styles here */
-        /* Example */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #1c1c1c;
@@ -74,15 +72,14 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
     <script>
-        let bufferSize; // Declare bufferSize as a variable
+        let bufferSize; 
         let buffer = [];
-        let mutex = 1; // Mutex semaphore initialized to 1
+        let mutex = 1; // Mutex semaphore 
         let items = 0; // Items semaphore
-        let empty; // Empty semaphore, to be set after user input
+        let empty; // Empty semaphore
         let deadlockDetected = false;
         let producerInterval, consumerInterval;
         var flag = 0;
-        // Initialize the buffer size on document load
         document.addEventListener('DOMContentLoaded', (event) => {
             initializeBufferSize();
         });
@@ -96,9 +93,9 @@
                 size = 5;
             }
         
-            bufferSize = size; // Set the buffer size based on user input
-            empty = bufferSize; // Set the 'empty' semaphore based on the buffer size
-            updateVisualization(); // Update the visualization with the new buffer size
+            bufferSize = size; 
+            empty = bufferSize; 
+            updateVisualization(); 
         }
         
         // vis.js visualization setup

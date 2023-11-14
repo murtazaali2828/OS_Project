@@ -292,20 +292,13 @@
         }
 
         function removeNodeAndEdges(nodeId) {
-            // Remove all edges connected to the node first to prevent orphaned edges.
             edges.get({
                 filter: function (edge) {
                     return edge.from === nodeId || edge.to === nodeId;
                 }
             }).forEach(edge => edges.remove({ id: edge.id }));
-
-            // Then remove the node itself.
             nodes.remove({ id: nodeId });
-
-            // Update the network to reflect the changes.
             network.setData({ nodes: nodes, edges: edges });
-            
-            // Optionally, fit the network to ensure all nodes are visible.
             network.fit({
                 animation: {
                     duration: 1000,
